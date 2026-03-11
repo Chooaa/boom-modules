@@ -9,3 +9,9 @@ tmp/
 corpus/
 crashes/
 errors/
+
+__pycache__
+
+
+modules/rtl/*
+modules/FormalTop.sv

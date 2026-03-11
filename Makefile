@@ -1,3 +1,5 @@
+.PHONY: modules ccover
+
 CHISEL_VERSION = 3.6.1
 
 FUZZ_TOP  = testsoc.SimMain
@@ -53,6 +55,12 @@ src: sim-verilog
 
 fuzzer:
 	@$(MAKE) -C difftest emu WITH_CHISELDB=0 WITH_CONSTANTIN=0 RTL_SUFFIX=$(RTL_SUFFIX) CPU=ROCKET_CHIP
+
+ccover:
+	@$(MAKE) -C ./ccover build
+
+modules:
+	@$(MAKE) -C modules emu
 
 clean:
 	rm -rf $(BUILD_DIR)

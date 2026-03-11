@@ -9,7 +9,7 @@ import freechips.rocketchip.diplomacy.DisableMonitors
 import org.chipsalliance.cde.config.Config
 import freechips.rocketchip.rocket.{WithNBigCores}
 import freechips.rocketchip.subsystem.{WithCoherentBusTopology}
-import boom.v3.common.{WithNSmallBooms, BoomTileAttachParams}
+import boom.v3.common.{WithNSmallBooms, BoomTileAttachParams, WithNLargeBooms}
 import freechips.rocketchip.subsystem._
 import freechips.rocketchip.devices.debug.{Debug, DebugModuleKey}
 import freechips.rocketchip.devices.tilelink._
@@ -21,7 +21,8 @@ class RocketDefaultConfig extends Config(new WithNBigCores(1) ++ new WithCoheren
 class BOOMDefaultConfig   extends Config(new WithNSmallBooms(1) ++ new WithCoherentBusTopology ++ new BaseConfig)
 
 class SimBOOMConfig extends Config(
-  new WithNBMCBooms(1).alter((site, _, up) => {
+//   new WithNBMCBooms(1).alter((site, _, up) => {
+  new WithNLargeBooms(1).alter((site, _, up) => {
     case TilesLocated(InSubsystem) => up(TilesLocated(InSubsystem), site).map {
       case tp: BoomTileAttachParams => tp.copy(tileParams = tp.tileParams.copy(
         core = tp.tileParams.core.copy(
