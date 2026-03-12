@@ -177,7 +177,7 @@ def setup_project(project_name, include_generic=False, renumber=True, insert_ini
     wrapper_sv = os.path.join(RTL_DIR, "SimTop.sv")
     fuzz_top = root_modules[0]
     print(f"\n--- Step 4: 生成顶层包裹 SimTop.sv (包裹 {fuzz_top}) ---")
-    generate_fuzz_wrapper(src_simtop, fuzz_top, wrapper_sv)
+    generate_fuzz_wrapper(src_simtop, fuzz_top, wrapper_sv, insert_initial=insert_initial)
 
     with open(wrapper_sv, "a") as f:
         f.write("\n")
@@ -217,7 +217,7 @@ def setup_project(project_name, include_generic=False, renumber=True, insert_ini
     # ---- Step 7: 生成形式验证顶层 FormalTop.sv (放在 SCRIPT_DIR 而非 RTL_DIR) ----
     formal_sv = os.path.join(SCRIPT_DIR, "FormalTop.sv")
     print(f"\n--- Step 7: 生成形式验证顶层 FormalTop.sv (包裹 {fuzz_top}) ---")
-    generate_formal_wrapper(src_simtop, fuzz_top, formal_sv)
+    generate_formal_wrapper(src_simtop, fuzz_top, formal_sv, insert_initial=insert_initial)
 
     with open(formal_sv, "a") as f:
         f.write("\n")
@@ -834,7 +834,7 @@ def parse_module_ports(sv_path, mod_name):
     return ports
 
 
-def generate_fuzz_wrapper(sv_path, mod_name, output_path=None):
+def generate_fuzz_wrapper(sv_path, mod_name, output_path=None, insert_initial=False):
     """生成 Fuzz 包裹模块。
 
     原顶层模块的所有 input（除 clock 和 reset）均从 reg_input 输入，
@@ -844,6 +844,7 @@ def generate_fuzz_wrapper(sv_path, mod_name, output_path=None):
         sv_path: SV 文件路径
         mod_name: 要包裹的顶层模块名
         output_path: 输出文件路径，为 None 则返回字符串
+        insert_initial: 是否为 reg_input 插入 initial 语句块
     Returns:
         生成的 wrapper 模块代码字符串
     """
@@ -884,6 +885,10 @@ def generate_fuzz_wrapper(sv_path, mod_name, output_path=None):
     lines.append(f"      end")
     lines.append(f"    end")
     lines.append(f"  end")
+    if insert_initial:
+        lines.append(f"  initial begin")
+        lines.append(f"    reg_input = '0;")
+        lines.append(f"  end")
     lines.append(f"")
 
     # 为每个 fuzz input 声明 wire 并从 reg_input 中切片赋值
@@ -938,7 +943,7 @@ def generate_fuzz_wrapper(sv_path, mod_name, output_path=None):
         return text
 
 
-def generate_formal_wrapper(sv_path, mod_name, output_path=None):
+def generate_formal_wrapper(sv_path, mod_name, output_path=None, insert_initial=False):
     """生成形式验证顶层包裹模块 FormalTop.sv。
 
     采用与 generate_fuzz_wrapper 相同的 reg_input 切片结构:
@@ -952,6 +957,7 @@ def generate_formal_wrapper(sv_path, mod_name, output_path=None):
         sv_path: SV 文件路径（用于解析 mod_name 的端口）
         mod_name: 要包裹的 DUT 模块名
         output_path: 输出文件路径，为 None 则返回字符串
+        insert_initial: 是否为 reg_input 插入 initial 语句块
     Returns:
         生成的 FormalTop 模块代码字符串（当 output_path 为 None 时）
     """
@@ -999,6 +1005,10 @@ def generate_formal_wrapper(sv_path, mod_name, output_path=None):
     lines.append(f"      reg_input <= formal_input;")
     lines.append(f"    end")
     lines.append(f"  end")
+    if insert_initial:
+        lines.append(f"  initial begin")
+        lines.append(f"    reg_input = '0;")
+        lines.append(f"  end")
     lines.append(f"")
 
     # 为每个 fuzz input 声明 wire 并从 reg_input 中切片赋值
@@ -1234,7 +1244,7 @@ def main():
         print("=" * 70)
         fuzz_top = args.fuzz_top or root_modules[0]
         fuzz_out = args.fuzz_wrapper_output or os.path.join(TMP_DIR, "SimTop.sv")
-        generate_fuzz_wrapper(sv_path, fuzz_top, fuzz_out)
+        generate_fuzz_wrapper(sv_path, fuzz_top, fuzz_out, insert_initial=args.initial)
 
     # 生成形式验证顶层包裹模块
     if args.formal_wrapper or args.all:
@@ -1243,7 +1253,7 @@ def main():
         print("=" * 70)
         fuzz_top = args.fuzz_top or root_modules[0]
         formal_out = args.formal_wrapper_output or os.path.join(SCRIPT_DIR, "FormalTop.sv")
-        generate_formal_wrapper(sv_path, fuzz_top, formal_out)
+        generate_formal_wrapper(sv_path, fuzz_top, formal_out, insert_initial=args.initial)
 
 if __name__ == "__main__":
     main()
